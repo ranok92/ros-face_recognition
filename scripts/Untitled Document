@@ -1,0 +1,126 @@
+#!/usr/bin/env python
+from __future__ import print_function
+import os
+import roslib
+import sys
+import rospy
+import cv2
+import dlib
+import csv
+import imutils
+import numpy as np
+import shutil
+import time
+import traceback
+from rospy.numpy_msg import numpy_msg
+from rospy_tutorials.msg import Floats
+sys.path.append(os.path.abspath("/home/abhisek/Study/Robotics/face_data/LightCNN"))
+import torch
+import torch.nn as nn
+import torch.nn.parallel
+import torch.backends.cudnn as cudnn
+import torch.optim
+import torch.utils.data
+import torch.nn.functional as F
+import torchvision.transforms as transforms
+import torchvision.datasets as datasets
+from light_cnn import LightCNN_9Layers, LightCNN_29Layers, LightCNN_29Layers_v2
+from load_imglist import ImageList
+
+
+from imutils import face_utils
+from std_msgs.msg import String
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
+
+
+class feature_extractor:
+
+
+    def __init__(self):
+        self.bridge = CvBridge()
+        self.feature_pub = rospy.Publisher("extracted_features", numpy_msg(Floats), queue_size=10)
+        self.img_sub = rospy.Subscriber("cropped_face",Image, self.callback)      
+        
+        
+    def callback(self, data):
+        
+        ##
+        path_to_saved_model = "/home/abhisek/Study/Robotics/face_data/LightCNN_29Layers_V2_checkpoint.pth.tar"
+        path_to_imgList = 'This is where cropped face data come in.'
+        model = LightCNN_29Layers_v2(num_classes = 80013 )
+        path_to_save = "no need for this publish it into another topic"
+        cuda = True
+
+        model.eval()
+        if cuda:
+            model = torch.nn.DataParallel(model).cuda()
+    
+        if path_to_saved_model:
+	    print("There")
+	    print(path_to_saved_model)
+            if os.path.isfile(path_to_saved_model):
+		print("here")
+                print("=> loading checkpoint '{}'".format(path_to_saved_model))
+                checkpoint = torch.load(path_to_saved_model)
+                model.load_state_dict(checkpoint['state_dict'])
+        else:
+            print("=> no checkpoint found at '{}'".format(args.resume))
+    	
+    #==============================================================================
+    #     img_list  = read_list(args.img_list)
+    #     transform = transforms.Compose([transforms.Resize([128,156]),
+    # 				    transforms.CenterCrop(128),
+    # 				    transforms.ToTensor()])
+    #     count     = 0
+    #     input     = torch.zeros(1, 1, 128, 128)
+    #     for img_name in img_list:
+    #         count = count + 1
+    #         img   = cv2.imread(os.path.join(args.root_path, img_name), cv2.IMREAD_GRAYSCALE)
+    #         print(os.path.join(args.root_path, img_name))
+    # 	print(img.shape)
+    #==============================================================================
+        inp = torch.zeros([1,1,128,128], requires_grad=True)
+	imgdata = self.bridge.imgmsg_to_cv2(data, "8UC1")
+	imgdatagray = imgdata
+	#imgdatagray = cv2.cvtColor(imgdata, cv2.COLOR_BGR2GRAY)
+	imgdata_resized = imutils.resize(imgdatagray, height = 128 , width = 128)
+	print("THE shape now")
+	print(imgdata_resized.shape)
+	#data = transforms.functional.to_pil_image(data)
+	processed_data = torch.from_numpy(imgdata_resized)
+	print(type(processed_data))
+	print(processed_data.shape)
+	print("PROCESSED DATA!!!")
+	print(processed_data)
+	time.sleep(10)
+        try:
+            inp[0,:,:,:] = prcessed_data
+    
+            start = time.time()
+            if cuda:
+                inp = inp.cuda()
+            input_var   = torch.autograd.Variable(inp, volatile=True)
+            _, features = model(input_var)
+            end = time.time() - start
+	    features = features.cpu().detach().numpy()
+	    print(type(features))
+            self.feature_pub.publish(features)
+	    print("Published Features!!!")
+	    print(features)
+        except Exception as e:
+	    print(traceback.format_exc())
+	    print(sys.exc_info()[0])
+
+
+
+def main(args):
+    feat_extract = feature_extractor()
+    rospy.init_node('feature_extractor',anonymous = True)
+    try:
+        rospy.spin()
+    except KeyboardInterrupt:
+        print("Shutting down")
+    
+if __name__=='__main__':
+    main(sys.argv)
