@@ -53,7 +53,10 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    facedata.msg
    faceArr.msg
+   featdata.msg
    featArr.msg
+   classdata.msg
+   classArr.msg
  )
 
 ## Generate services in the 'srv' folder

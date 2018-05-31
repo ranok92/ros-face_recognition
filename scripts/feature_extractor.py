@@ -27,8 +27,8 @@ import torchvision.datasets as datasets
 from light_cnn import LightCNN_9Layers, LightCNN_29Layers, LightCNN_29Layers_v2
 from load_imglist import ImageList
 
-from face_detection.msg import faceArr
-from face_detection.msg import featArr
+from face_detection.msg import faceArr,facedata	
+from face_detection.msg import featdata,featArr
 from imutils import face_utils
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
@@ -40,7 +40,7 @@ class feature_extractor:
 
     def __init__(self):
         self.bridge = CvBridge()
-        self.feature_pub = rospy.Publisher("extracted_features", numpy_msg(Floats), queue_size = 10)
+        self.feature_pub = rospy.Publisher("extracted_features", featArr, queue_size = 10)
         self.img_sub = rospy.Subscriber("cropped_face",faceArr, self.callback)      
         
         
@@ -88,8 +88,15 @@ class feature_extractor:
         input = torch.zeros(1,1,128,128)
 	
 	print("HE LIENGKHDSG",type(data.data))
+	feat_array = []
+	
 	for i in range(len(data.data)):
-	    cur = data.data[i]
+	    cur = data.data[i].face
+	    sing_feat = featdata()
+	    sing_feat.top = data.data[i].top
+	    sing_feat.left = data.data[i].left
+	    sing_feat.ht = data.data[i].ht
+	    sing_feat.wd = data.data[i].wd
 	    imgdata = self.bridge.imgmsg_to_cv2(cur, "8UC1")
 	    imgdata = np.expand_dims(imgdata, axis=2)
 	    imgdatapil = transforms.functional.to_pil_image(imgdata)
@@ -119,17 +126,19 @@ class feature_extractor:
 	        features = features.data.cpu().numpy()[0]
 	        print(type(feature))
 	        a = np.array(features, dtype=np.float32)
-		featnpArr[i*256:i*256+256,0]= a
+		sing_feat.feature = a
+		feat_array.append(sing_feat)
+		#featnpArr[i*256:i*256+256,0]= a
                 #self.feature_pub.publish(a)
             except Exception as e:
 	        print(traceback.format_exc())
 	        print(sys.exc_info()[0])
 
 	try:
-	    self.feature_pub.publish(featnpArr)
+	    self.feature_pub.publish(feat_array)
 	    print("Published Features!!!")
-	    print(type(featnpArr))
-	    print(featnpArr)
+	    print(type(feat_array))
+	    print(feat_array)
 	    #time.sleep(30)
 	except Exception as e:
 	    print(traceback.format_exc())

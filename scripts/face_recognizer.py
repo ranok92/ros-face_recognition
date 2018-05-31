@@ -17,17 +17,17 @@ from cv_bridge import CvBridge, CvBridgeError
 from rospy.numpy_msg import numpy_msg
 from rospy_tutorials.msg import Floats
 from rospy.numpy_msg import numpy_msg
-from face_detection.msg import featArr
+from face_detection.msg import featArr,classArr,classdata
 
 class face_recognizer:
 
     def __init__(self):
       print("Initializing")
 
-      self.class_pub = rospy.Publisher("final_result",String,queue_size = 1)
+      self.class_pub = rospy.Publisher("final_result",classArr,queue_size = 1)
       print("Here1")
       self.bridge = CvBridge()
-      self.feat_sub = rospy.Subscriber("extracted_features",numpy_msg(Floats),self.callback)
+      self.feat_sub = rospy.Subscriber("extracted_features",featArr,self.callback)
       print("Here2")
       self.counter = 0
 
