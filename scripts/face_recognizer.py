@@ -13,18 +13,17 @@ from imutils import face_utils
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
-
 from rospy.numpy_msg import numpy_msg
 from rospy_tutorials.msg import Floats
 from rospy.numpy_msg import numpy_msg
-from face_detection.msg import featArr,classArr,classdata
+from face_detection.msg import featArr,classArr,classdata, featdata
 
 class face_recognizer:
 
     def __init__(self):
       print("Initializing")
 
-      self.class_pub = rospy.Publisher("final_result",classArr,queue_size = 1)
+      self.class_pub = rospy.Publisher("final_result",classArr,queue_size = 10)
       print("Here1")
       self.bridge = CvBridge()
       self.feat_sub = rospy.Subscriber("extracted_features",featArr,self.callback)
@@ -58,7 +57,7 @@ class face_recognizer:
       file_name = 'centroid_info_8py.npy'
       print("THIS IS THE dATA",data.data)
       print(type(data))
-      print(data.data.shape)
+      #print(data.data.shape)
       #data = np.asarray(data.data).astype(float)
       #print (data.data"
       try:
@@ -70,16 +69,25 @@ class face_recognizer:
       #print (centroid_info[:,:,:])
       #print (type(data.data))
       #print (data.data.shape)
-      no_of_feats_read = data.data.shape[0]/256
+      #no_of_feats_read = data.data.shape[0]/256
       #print(no_of_feats_read)
-      for i in range(no_of_feats_read):
-      	cl2 , collector = self.checkClass(centroid_info,data.data[i*256:(i+1)*256])
+      classInfoArray = classArr()
+      classInfoArray.header.stamp = rospy.Time.now()
+      for i in range(len(data.data)):
+	classInfo = classdata()
+      	cl2 , collector = self.checkClass(centroid_info,data.data[i].feature.data)
+	classInfo.classval = str(cl2+1)
+	classInfo.left = data.data[i].left
+	classInfo.top = data.data[i].top
+	classInfo.ht = data.data[i].ht
+	classInfo.wd = data.data[i].wd
       	final_class = final_class+str(cl2+1)+','
 	print(final_class)
+	classInfoArray.data.append(classInfo)
       #print("This is the final class")
-      #print(collector)
+      print(collector)
       try:
-        self.class_pub.publish(str(final_class))
+        self.class_pub.publish(classInfoArray)
       except rospy.ROSInterruptException:
         pass
 

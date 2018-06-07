@@ -1,4 +1,4 @@
-string class
+string classval
 float32 left
 float32 top
 float32 ht

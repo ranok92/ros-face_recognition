@@ -10,7 +10,7 @@ import imutils
 import numpy as np
 from imutils import face_utils
 from std_msgs.msg import String
-from face_detection.msg import faceArr, facedata
+from face_detection.msg import faceArr, facedata,classdata, classArr
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
@@ -20,7 +20,7 @@ class image_converter:
   
   def __init__(self):
     self.image_pub = rospy.Publisher("cropped_face",faceArr, queue_size=10)
-
+    self.blank_finals = rospy.Publisher("final_result",classArr, queue_size=10)
     self.bridge = CvBridge()
     self.image_sub = rospy.Subscriber("image_raw",Image,self.callback)
     self.counter = 0
@@ -56,9 +56,9 @@ class image_converter:
     print(self.counter)
     flag = False
     self.counter = self.counter+1
-    if self.counter%10==0:
+    if self.counter%5==0:
       try:
-	pad = 30
+	pad = 0
         cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 	
         detector = dlib.get_frontal_face_detector()
@@ -89,6 +89,18 @@ class image_converter:
 	  numFaces.append(outputval)
 	  #self.image_pub.publish(outputval)
 	  #self.image_pub.publish(self.bridge.cv2_to_imgmsg(resized_face, "8UC1"))
+
+	if len(rects)==0:
+	  blank = classdata()
+	  blankArr = classArr()
+	  blankArr.header.stamp = rospy.Time.now()
+          blank.classval = 'NAN'
+	  blank.left = -1
+	  blank.top = -1
+	  blank.ht = blank.wd = -1
+	  blankArr.data.append(blank)
+	  self.blank_finals.publish(blankArr)
+
 	self.image_pub.publish(numFaces)
 	#print(numFaces)
 	cv2.imshow("Image window", cv_image)

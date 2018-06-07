@@ -47,7 +47,7 @@ class feature_extractor:
     def callback(self, data):
         
         ##
-	featnpArr = np.zeros([len(data.data)*256,1], dtype=np.float32)
+	#featnpArr = np.zeros([len(data.data)*256,1], dtype=np.float32)
         path_to_saved_model = "/home/abhisek/Study/Robotics/face_data/LightCNN_29Layers_V2_checkpoint.pth.tar"
         path_to_imgList = 'This is where cropped face data come in.'
         model = LightCNN_29Layers_v2(num_classes = 80013 )
@@ -126,7 +126,7 @@ class feature_extractor:
 	        features = features.data.cpu().numpy()[0]
 	        print(type(feature))
 	        a = np.array(features, dtype=np.float32)
-		sing_feat.feature = a
+		sing_feat.feature.data = a
 		feat_array.append(sing_feat)
 		#featnpArr[i*256:i*256+256,0]= a
                 #self.feature_pub.publish(a)
