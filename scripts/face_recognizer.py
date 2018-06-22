@@ -23,7 +23,7 @@ class face_recognizer:
     def __init__(self):
       print("Initializing")
 
-      self.class_pub = rospy.Publisher("final_result",classArr,queue_size = 10)
+      self.class_pub = rospy.Publisher("final_result",classArr,queue_size = 0)
       print("Here1")
       self.bridge = CvBridge()
       self.feat_sub = rospy.Subscriber("extracted_features",featArr,self.callback)

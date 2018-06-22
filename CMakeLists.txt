@@ -57,6 +57,7 @@ find_package(catkin REQUIRED COMPONENTS
    featArr.msg
    classdata.msg
    classArr.msg
+   command.msg
  )
 
 ## Generate services in the 'srv' folder
