@@ -17,12 +17,17 @@ from cv_bridge import CvBridge, CvBridgeError
 class image_converter:
 	
 	def __init__(self):
-		self.image_pub = rospy.Publisher("cropped_face",faceArr, queue_size=0)
-		self.blank_finals = rospy.Publisher("final_result",classArr, queue_size=0)
+
+		self.detector = dlib.get_frontal_face_detector()
+		self.image_pub = rospy.Publisher("cropped_face",faceArr, queue_size=1)
+		self.blank_finals = rospy.Publisher("final_result",classArr, queue_size=1)
 		self.bridge = CvBridge()
 		self.image_sub = rospy.Subscriber("image_raw",Image,self.callback)
 		self.counter = 0
-		self.detector = dlib.get_frontal_face_detector()
+
+
+
+
 	def rect_to_bb(self,rect):
 	# take a bounding predicted by dlib and convert it
 	# to the format (x, y, w, h) as we would normally do
@@ -61,7 +66,7 @@ class image_converter:
 				#detector = dlib.get_frontal_face_detector()
 				cv_image = imutils.resize(cv_image, height= 300 , width = 400)
 				gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-				cv_image = gray
+				#cv_image = gray
 
 				rects = self.detector(gray,1)
 				print(len(rects))
@@ -76,7 +81,7 @@ class image_converter:
 					outputval.wd = w
 					print("WW",w)
 					cv2.rectangle(cv_image,(x-pad,y-pad),(x+w+pad,y+h+pad),(0,255,0),2)
-					cropped_face = cv_image[y-pad:y+h+pad,x-pad:x+w+pad]
+					cropped_face = gray[y-pad:y+h+pad,x-pad:x+w+pad]
 					resized_face = imutils.resize(cropped_face, height = 140 , width = 140)
 
 					print(resized_face.shape)
@@ -101,7 +106,7 @@ class image_converter:
 				self.image_pub.publish(numFaces)
 	#print(numFaces)
 				cv2.imshow("Image window", cv_image)
-				cv2.waitKey(3)
+				cv2.waitKey(1)
 
 			except CvBridgeError as e:
 				print(e)
