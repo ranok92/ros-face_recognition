@@ -29,13 +29,16 @@ class face_recognizer:
         print("Here1")
         self.bridge = CvBridge()
         self.feat_sub = rospy.Subscriber("extracted_features",featArr,self.callback)
+        self.image_sub = rospy.Subscriber("image_raw",Image,self.imageStorageCall)
         print("Here2")
         self.counter = 0
         self.centroid_info_dir = '/home/abhisek/Study/Robotics/face_data/centroid_info'
         self.file_name = 'centroid_info_8py.npy'
+        self.currentFrame = Image()
         #print(data.data.shape)
         #data = np.asarray(data.data).astype(float)
         #print (data.data"
+        self.bridge = CvBridge()
         self.threshold = 200
         self.new_feat_dict = {}
         self.new_centroid_dict = {}
@@ -48,6 +51,10 @@ class face_recognizer:
         print ("this is the entroid info", self.centroid_info.shape)
 
     
+    def imageStorageCall(self,data):
+
+        cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        self.currentFrame = imutils.resize(cv_image, height= 300 , width = 400)
 
     def checkClass(self,centroid_list, entry):
     
@@ -142,7 +149,7 @@ class face_recognizer:
     def updateInfo(self):
 
         #update the centroid information 
-        samples_req = 40
+        samples_req = 20
         temp_feat = np.zeros([1,256,1])
         temp_feat_arr = np.zeros([1,256,1])
         for key in self.new_feat_dict:
@@ -194,16 +201,26 @@ class face_recognizer:
                 classInfo.top = data.data[i].top
                 classInfo.ht = data.data[i].ht
                 classInfo.wd = data.data[i].wd
+                cv2.rectangle(self.currentFrame,(int(data.data[i].left),int(data.data[i].top)),(int(data.data[i].left+data.data[i].wd),int(data.data[i].top+data.data[i].wd)),(0,255,0),2)
                 final_class = final_class+str(cl2+1)+','
+		font = cv2.FONT_HERSHEY_COMPLEX_SMALL
+		cv2.putText(self.currentFrame,str(cl2+1),(int(data.data[i].left-2),int(data.data[i].top-2)),font,1,(0,255,0))
                 print(final_class)
-                print(collector)
+                #print(collector)
                 classInfoArray.data.append(classInfo)
             else:
                 #create a new class because it doesnt match the existing ones
+		cv2.rectangle(self.currentFrame,(int(data.data[i].left),int(data.data[i].top)),(int(data.data[i].left+data.data[i].wd),int(data.data[i].top+data.data[i].wd)),(0,0,255),2)
+                final_class = final_class+str(cl2+1)+','
+		font = cv2.FONT_HERSHEY_COMPLEX_SMALL
+		cv2.putText(self.currentFrame,'???',(int(data.data[i].left-2),int(data.data[i].top-2)),font,1,(0,0,255))
                 self.generate_Cluster(data.data[i])
 
             #print("This is the final class")
             #SSprint(collector)
+        cv2.imshow("Image window", self.currentFrame)
+        cv2.waitKey(1)
+
         try:
             self.class_pub.publish(classInfoArray)
             self.prev_frame_info = data

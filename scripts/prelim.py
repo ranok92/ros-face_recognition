@@ -22,7 +22,9 @@ class image_converter:
 		self.image_pub = rospy.Publisher("cropped_face",faceArr, queue_size=1)
 		self.blank_finals = rospy.Publisher("final_result",classArr, queue_size=1)
 		self.bridge = CvBridge()
-		self.image_sub = rospy.Subscriber("image_raw",Image,self.callback)
+		#rospy.sleep(3)
+		self.image_sub = rospy.Subscriber("image_raw",Image,self.callback ,queue_size = 1)
+		rospy.sleep(3)
 		self.counter = 0
 
 
@@ -59,7 +61,7 @@ class image_converter:
 		print(self.counter)
 		flag = False
 		self.counter = self.counter+1
-		if self.counter%1==0:
+		if self.counter%2==0:
 			try:
 				pad = 0
 				cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
@@ -71,6 +73,7 @@ class image_converter:
 				rects = self.detector(gray,1)
 				print(len(rects))
 				numFaces = []
+				
 				for rect in enumerate(rects):
 					flag=True
 					outputval = facedata()
@@ -79,18 +82,19 @@ class image_converter:
 					outputval.top = y
 					outputval.ht = h
 					outputval.wd = w
-					print("WW",w)
-					cv2.rectangle(cv_image,(x-pad,y-pad),(x+w+pad,y+h+pad),(0,255,0),2)
+					#print("WW",w)
+					#cv2.rectangle(cv_image,(x-pad,y-pad),(x+w+pad,y+h+pad),(0,255,0),2)
 					cropped_face = gray[y-pad:y+h+pad,x-pad:x+w+pad]
 					resized_face = imutils.resize(cropped_face, height = 140 , width = 140)
 
-					print(resized_face.shape)
-					print(outputval)
+					#print(resized_face.shape)
+					#print(outputval)
 					outputval.face = self.bridge.cv2_to_imgmsg(resized_face, "8UC1")
 
 					numFaces.append(outputval)
 					#self.image_pub.publish(outputval)
 					#self.image_converter_pub.publish(self.bridge.cv2_to_imgmsg(resized_face, "8UC1"))
+				
 
 				if len(rects)==0:
 					blank = classdata()
@@ -105,7 +109,7 @@ class image_converter:
 
 				self.image_pub.publish(numFaces)
 	#print(numFaces)
-				cv2.imshow("Image window", cv_image)
+				cv2.imshow("Image window2", cv_image)
 				cv2.waitKey(1)
 
 			except CvBridgeError as e:
