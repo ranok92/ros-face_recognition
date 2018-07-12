@@ -8,6 +8,7 @@ import cv2
 import dlib
 import csv
 import imutils
+import sklearn.metrics.pairwise as smp
 import numpy as np
 from imutils import face_utils
 from std_msgs.msg import String
@@ -39,7 +40,7 @@ class face_recognizer:
         #data = np.asarray(data.data).astype(float)
         #print (data.data"
         self.bridge = CvBridge()
-        self.threshold = 200
+        self.threshold = .45
         self.new_feat_dict = {}
         self.new_centroid_dict = {}
         self.prev_frame_info = featArr()
@@ -66,14 +67,16 @@ class face_recognizer:
 
         for i in range(classes):
             #print(i)
-            collector[i] = np.linalg.norm(centroid_list[i,0:256,:]-entryval)
-
+            #collector[i] = np.linalg.norm(centroid_list[i,0:256,:]-entryval)
+            print(centroid_list[i,0:256,:].shape)
+            print(entryval.shape)
+            collector[i] = smp.cosine_similarity(centroid_list[i,0:256,:].transpose(),entryval.transpose())
     	    t = centroid_list[i,0:256,:] - entryval
 	
 	    #print('collecotr',collector)
 	    #print('entryshape',entry.shape)
 
-        return np.argmin(collector) , collector
+        return np.argmax(collector) , collector
     
     def generate_Cluster(self,rFeatData):
 
@@ -139,7 +142,7 @@ class face_recognizer:
         key_val = -1
         for key in self.new_centroid_dict:
             similarity = np.linalg.norm(self.new_centroid_dict[key] - rFeatData.feature.data)
-            if similarity < self.threshold:
+            if similarity > self.threshold:
 
                 #there is a match in similarity return the key of the match
                 return key
@@ -195,7 +198,7 @@ class face_recognizer:
         for i in range(len(data.data)):
             classInfo = classdata()
             cl2 , collector = self.checkClass(self.centroid_info,data.data[i].feature.data)
-            if collector[cl2] < self.threshold:
+            if collector[cl2] > self.threshold:
                 classInfo.classval = str(cl2+1)
                 classInfo.left = data.data[i].left
                 classInfo.top = data.data[i].top
@@ -206,7 +209,7 @@ class face_recognizer:
 		font = cv2.FONT_HERSHEY_COMPLEX_SMALL
 		cv2.putText(self.currentFrame,str(cl2+1),(int(data.data[i].left-2),int(data.data[i].top-2)),font,1,(0,255,0))
                 print(final_class)
-                #print(collector)
+                print(collector)
                 classInfoArray.data.append(classInfo)
             else:
                 #create a new class because it doesnt match the existing ones
